@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -21,8 +21,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.hipno06.traccoon.model.Task
 
-import traccoon.shared.generated.resources.Res
-import traccoon.shared.generated.resources.compose_multiplatform
+// import traccoon.shared.generated.resources.Res
+// import traccoon.shared.generated.resources.compose_multiplatform
 
 @Composable
 @Preview
@@ -81,7 +81,7 @@ fun App() {
                 }
                 //modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
             ) {
-                Text("Add Task")
+                Text("Añadir Tarea")
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -93,17 +93,33 @@ fun App() {
                     myTasks.forEachIndexed { index, task ->
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically // Centra las cosas verticalmente
+                            verticalAlignment = Alignment.CenterVertically // Centres everything vertically
                         ) {
-                            Column(modifier = Modifier) {
+                            // Checkbox: completed task
+                            Checkbox(
+                                checked = task.isCompleted,
+                                onCheckedChange = { isChecked ->
+                                    myTasks[index] = task.copy(isCompleted = isChecked)
+                                }
+                            )
+
+                            // Tasks texts
+                            Column(modifier = Modifier.weight(1f).padding(start = 8.dp, end = 8.dp)) {
                                 Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
-                                Text(text = "ID: ${task.id}")
+                                // Text(text = "ID: ${task.id}")
                                 if (task.description.isNotBlank()) {
                                     Text(
                                         text = task.description,
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 }
+                            }
+
+                            // Delete task button
+                            Button(
+                                onClick = { myTasks.removeAt(index)}
+                            ) {
+                                Text("Borrar")
                             }
                         }
                     }
