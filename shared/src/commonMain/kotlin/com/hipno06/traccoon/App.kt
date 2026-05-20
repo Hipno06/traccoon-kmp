@@ -29,7 +29,7 @@ import traccoon.shared.generated.resources.compose_multiplatform
 fun App() {
     // Task list
     val myTasks = remember { mutableStateListOf<Task>() }
-    var taskIdCounter = remember { mutableStateOf(1) }
+    var taskIdCounter by remember { mutableStateOf(1) }
 
     // States to save what user writes inside text boxes
     var inputTitle by remember { mutableStateOf("") }
@@ -70,9 +70,9 @@ fun App() {
                 onClick = {
                     // Only save if title isn't empty
                     if (inputTitle.isNotBlank()) {
-                        val newTask = Task(taskIdCounter.value, inputTitle, inputDescription)
+                        val newTask = Task(taskIdCounter, inputTitle, inputDescription)
                         myTasks.add(newTask)
-                        taskIdCounter.value++
+                        taskIdCounter++
 
                         // Clean input boxes
                         inputTitle = ""
