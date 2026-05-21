@@ -19,6 +19,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.hipno06.traccoon.model.Task
@@ -146,13 +148,18 @@ fun App() {
                                 Column(modifier = Modifier.weight(1f).padding(start = 8.dp, end = 8.dp)) {
                                     Text(
                                         text = task.title,
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            // Cross out the task's title if it's marked as completed
+                                            textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                                        ),
+                                        // Recolor the task's title in gray if it's marked as completed
+                                        color = if (task.isCompleted) Color.Gray else Color.Unspecified,
                                         // Text Overflow
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis // "..." shows when the text overflows
                                     )
                                     // Text(text = "ID: ${task.id}")
-                                    if (task.description.isNotBlank()) {
+                                    if (task.description.isNotBlank() && !task.isCompleted) {
                                         Text(
                                             text = task.description,
                                             style = MaterialTheme.typography.bodySmall,
