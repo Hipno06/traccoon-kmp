@@ -20,7 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.hipno06.traccoon.model.Task
-
+import com.russhwolf.settings.Settings
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 // import traccoon.shared.generated.resources.Res
 // import traccoon.shared.generated.resources.compose_multiplatform
 
@@ -30,6 +32,30 @@ fun App() {
     // Task list
     val myTasks = remember { mutableStateListOf<Task>() }
     var taskIdCounter by remember { mutableStateOf(1) }
+
+    // Save logic
+    // Multiplatform save tool
+    val settings = remember { Settings() }
+    // Save function (we'll use it when pressing a button)
+    val saveTasks = {
+        // String -> Json
+        val jsonString = Json.encodeToString(myTasks.toList())
+        settings.putString("MIS_TAREAS", jsonString)
+    }
+    // Load tasks when the app opens
+    LaunchedEffect(Unit) {
+        val savedJson = settings.getString("MIS_TAREAS", "")
+        if (savedJson.isNotEmpty()) {
+            // Json -> String
+            val loadTasks = Json.decodeFromString<List<Task>>(savedJson)
+            myTasks.addAll(loadTasks)
+            // Update task id counter
+            if (loadTasks.isNotEmpty()) {
+                taskIdCounter = loadTasks.maxOf { it.id } + 1
+            }
+        }
+    }
+
 
     // States to save what user writes inside text boxes
     var inputTitle by remember { mutableStateOf("") }
@@ -73,6 +99,7 @@ fun App() {
                         val newTask = Task(taskIdCounter, inputTitle, inputDescription)
                         myTasks.add(newTask)
                         taskIdCounter++
+                        saveTasks()
 
                         // Clean input boxes
                         inputTitle = ""
@@ -100,6 +127,7 @@ fun App() {
                                 checked = task.isCompleted,
                                 onCheckedChange = { isChecked ->
                                     myTasks[index] = task.copy(isCompleted = isChecked)
+                                    saveTasks()
                                 }
                             )
 
@@ -117,7 +145,10 @@ fun App() {
 
                             // Delete task button
                             Button(
-                                onClick = { myTasks.removeAt(index)}
+                                onClick = {
+                                    myTasks.removeAt(index)
+                                    saveTasks()
+                                }
                             ) {
                                 Text("Borrar")
                             }
