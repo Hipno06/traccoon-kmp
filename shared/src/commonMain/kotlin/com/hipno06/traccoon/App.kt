@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -23,6 +25,7 @@ import com.hipno06.traccoon.model.Task
 import com.russhwolf.settings.Settings
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import androidx.compose.ui.text.style.TextOverflow
 // import traccoon.shared.generated.resources.Res
 // import traccoon.shared.generated.resources.compose_multiplatform
 
@@ -118,39 +121,57 @@ fun App() {
                     Text(text = "No hay tareas pendientes")
                 } else {
                     myTasks.forEachIndexed { index, task ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically // Centres everything vertically
-                        ) {
-                            // Checkbox: completed task
-                            Checkbox(
-                                checked = task.isCompleted,
-                                onCheckedChange = { isChecked ->
-                                    myTasks[index] = task.copy(isCompleted = isChecked)
-                                    saveTasks()
-                                }
+                        Card (
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp, horizontal = 8.dp), // Separación exterior entre tarjetas
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant // Un color grisáceo automático muy elegante
                             )
-
-                            // Tasks texts
-                            Column(modifier = Modifier.weight(1f).padding(start = 8.dp, end = 8.dp)) {
-                                Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
-                                // Text(text = "ID: ${task.id}")
-                                if (task.description.isNotBlank()) {
-                                    Text(
-                                        text = task.description,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            }
-
-                            // Delete task button
-                            Button(
-                                onClick = {
-                                    myTasks.removeAt(index)
-                                    saveTasks()
-                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically // Centres everything vertically
                             ) {
-                                Text("Borrar")
+                                // Checkbox: completed task
+                                Checkbox(
+                                    checked = task.isCompleted,
+                                    onCheckedChange = { isChecked ->
+                                        myTasks[index] = task.copy(isCompleted = isChecked)
+                                        saveTasks()
+                                    }
+                                )
+
+                                // Tasks texts
+                                Column(modifier = Modifier.weight(1f).padding(start = 8.dp, end = 8.dp)) {
+                                    Text(
+                                        text = task.title,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        // Text Overflow
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis // "..." shows when the text overflows
+                                    )
+                                    // Text(text = "ID: ${task.id}")
+                                    if (task.description.isNotBlank()) {
+                                        Text(
+                                            text = task.description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            // Text Overflow
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+
+                                // Delete task button
+                                Button(
+                                    onClick = {
+                                        myTasks.removeAt(index)
+                                        saveTasks()
+                                    }
+                                    ) {
+                                    Text("Borrar")
+                                }
                             }
                         }
                     }
