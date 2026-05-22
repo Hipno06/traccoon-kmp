@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -38,25 +39,30 @@ fun App() {
     val myTasks = remember { mutableStateListOf<Task>() }
     var taskIdCounter by remember { mutableStateOf(1) }
 
+    val isPreview = LocalInspectionMode.current
     // Save logic
     // Multiplatform save tool
-    val settings = remember { Settings() }
+    val settings = remember { if (isPreview) null else Settings() }
     // Save function (we'll use it when pressing a button)
     val saveTasks = {
-        // String -> Json
-        val jsonString = Json.encodeToString(myTasks.toList())
-        settings.putString("MIS_TAREAS", jsonString)
+        if (!isPreview) {   // Only saves if it's real
+            // String -> JSON
+            val jsonString = Json.encodeToString(myTasks.toList())
+            settings?.putString("MIS_TAREAS", jsonString)
+        }
     }
     // Load tasks when the app opens
     LaunchedEffect(Unit) {
-        val savedJson = settings.getString("MIS_TAREAS", "")
-        if (savedJson.isNotEmpty()) {
-            // Json -> String
-            val loadTasks = Json.decodeFromString<List<Task>>(savedJson)
-            myTasks.addAll(loadTasks)
-            // Update task id counter
-            if (loadTasks.isNotEmpty()) {
-                taskIdCounter = loadTasks.maxOf { it.id } + 1
+        if (!isPreview) {   // Only loads if it's real
+            val savedJson = settings?.getString("MIS_TAREAS", "") ?: ""
+            if (savedJson.isNotEmpty()) {
+                // Json -> String
+                val loadTasks = Json.decodeFromString<List<Task>>(savedJson)
+                myTasks.addAll(loadTasks)
+                // Update task id counter
+                if (loadTasks.isNotEmpty()) {
+                    taskIdCounter = loadTasks.maxOf { it.id } + 1
+                }
             }
         }
     }
