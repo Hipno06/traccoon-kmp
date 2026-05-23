@@ -68,7 +68,7 @@ fun App() {
                     // Try to load tasks from JSON
                     val loadTasks = Json.decodeFromString<List<Task>>(savedJson)
                     myTasks.addAll(loadTasks)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     // Old JSON format detected
                     try {
                         // Read the raw file
@@ -98,7 +98,7 @@ fun App() {
                             val correctedJsonString = Json.encodeToString(myTasks.toList())
                             settings?.putString("MIS_TAREAS" ,correctedJsonString)
                         }
-                    } catch (migrationError: Exception) {
+                    } catch (_: Exception) {
                         //! If there's an error, delete the file
                         settings?.remove("MIS_TAREAS")
                     }
