@@ -30,6 +30,12 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import androidx.compose.ui.text.style.TextOverflow
 import com.hipno06.traccoon.model.generateTaskHash
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonPrimitive
 
 // import traccoon.shared.generated.resources.Res
 // import traccoon.shared.generated.resources.compose_multiplatform
@@ -37,14 +43,14 @@ import com.hipno06.traccoon.model.generateTaskHash
 @Composable
 @Preview
 fun App() {
-    // Task list
+    //? Task list
     val myTasks = remember { mutableStateListOf<Task>() }
 
     val isPreview = LocalInspectionMode.current
-    // Save logic
+    //? Save logic
     // Multiplatform save tool
     val settings = remember { if (isPreview) null else Settings() }
-    // Save function (we'll use it when pressing a button)
+    //? Save function (we'll use it when pressing a button)
     val saveTasks = {
         if (!isPreview) {   // Only saves if it's real
             // String -> JSON
@@ -52,28 +58,59 @@ fun App() {
             settings?.putString("MIS_TAREAS", jsonString)
         }
     }
-    // Load tasks when the app opens
+    //? Load tasks when the app opens
     LaunchedEffect(Unit) {
         if (!isPreview) {   // Only loads if it's real
             val savedJson = settings?.getString("MIS_TAREAS", "") ?: ""
             if (savedJson.isNotEmpty()) {
                 // Json -> String
-                val loadTasks = Json.decodeFromString<List<Task>>(savedJson)
-                myTasks.addAll(loadTasks)
+                try {
+                    // Try to load tasks from JSON
+                    val loadTasks = Json.decodeFromString<List<Task>>(savedJson)
+                    myTasks.addAll(loadTasks)
+                } catch (e: Exception) {
+                    // Old JSON format detected
+                    try {
+                        // Read the raw file
+                        val jsonElement = Json.parseToJsonElement(savedJson)
+                        if (jsonElement is JsonArray) {
+                            // Build another JSON element by element
+                            val migratedArray = buildJsonArray {
+                                for (taskElement in jsonElement) {
+                                    if (taskElement is JsonObject) {
+                                        val mutableTask = taskElement.toMutableMap()
+                                        // Check the old ID
+                                        val oldId = mutableTask["id"]
+                                        // If the old ID isn't a String, change it and generate a new task hash
+                                        if (oldId?.jsonPrimitive?.isString == false) {
+                                            mutableTask["id"] = JsonPrimitive(generateTaskHash())
+                                        }
+                                        // Add the task to the list
+                                        add(JsonObject(mutableTask))
+                                    }
+                                }
+                            }
+                            // converts the new JSON into a task
+                            val loadTasks = Json.decodeFromJsonElement<List<Task>>(migratedArray)
+                            myTasks.addAll(loadTasks)
+
+                            // Overwrite the old file with new changes
+                            val correctedJsonString = Json.encodeToString(myTasks.toList())
+                            settings?.putString("MIS_TAREAS" ,correctedJsonString)
+                        }
+                    } catch (migrationError: Exception) {
+                        //! If there's an error, delete the file
+                        settings?.remove("MIS_TAREAS")
+                    }
+                }
             }
         }
     }
 
-
-    // States to save what user writes inside text boxes
+    //? States to save what user writes inside text boxes
     var inputTitle by remember { mutableStateOf("") }
     var inputDescription by remember { mutableStateOf("") }
-    /*
-    val task1 = Task(taskIdCounter.value, "Tarea 1", "Descripción")
-    val task2 = Task(taskIdCounter.value++, "Tarea 2")
-    val task3 = task1
-    myTasks.addAll(listOf(task1, task2, task3))
-*/
+
     MaterialTheme {
         Column(
             modifier = Modifier
@@ -82,16 +119,16 @@ fun App() {
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Title
+            //? Title
             Text(text = "🦝 Traccoon 🦝", style = MaterialTheme.typography.titleLargeEmphasized)
 
-            // Text Box: Title
+            //? Text Box: Title
             TraccoonTextField(
                 value = inputTitle,
                 onValueChange = { inputTitle = it },
                 label = "Título de la tarea"
             )
-            // Text Box: Description
+            //? Text Box: Description
             TraccoonTextField(
                 value = inputDescription,
                 onValueChange = { inputDescription = it },
@@ -99,7 +136,7 @@ fun App() {
             )
 
             Spacer(modifier = Modifier.height(12.dp))
-            // Button: save task
+            //? Button: save task
             Button(
                 onClick = {
                     // Only save if title isn't empty
@@ -113,7 +150,7 @@ fun App() {
                         inputDescription = ""
                     }
                 }
-                //modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+                ////modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
             ) {
                 Text("Añadir Tarea")
             }
@@ -128,9 +165,9 @@ fun App() {
                         Card (
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 4.dp, horizontal = 8.dp), // Separación exterior entre tarjetas
+                                .padding(vertical = 4.dp, horizontal = 8.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant // Un color grisáceo automático muy elegante
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
                             )
                         ) {
                             Row(
