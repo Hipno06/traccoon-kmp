@@ -29,6 +29,8 @@ import com.russhwolf.settings.Settings
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import androidx.compose.ui.text.style.TextOverflow
+import com.hipno06.traccoon.model.generateTaskHash
+
 // import traccoon.shared.generated.resources.Res
 // import traccoon.shared.generated.resources.compose_multiplatform
 
@@ -37,7 +39,6 @@ import androidx.compose.ui.text.style.TextOverflow
 fun App() {
     // Task list
     val myTasks = remember { mutableStateListOf<Task>() }
-    var taskIdCounter by remember { mutableStateOf(1) }
 
     val isPreview = LocalInspectionMode.current
     // Save logic
@@ -59,10 +60,6 @@ fun App() {
                 // Json -> String
                 val loadTasks = Json.decodeFromString<List<Task>>(savedJson)
                 myTasks.addAll(loadTasks)
-                // Update task id counter
-                if (loadTasks.isNotEmpty()) {
-                    taskIdCounter = loadTasks.maxOf { it.id } + 1
-                }
             }
         }
     }
@@ -107,9 +104,8 @@ fun App() {
                 onClick = {
                     // Only save if title isn't empty
                     if (inputTitle.isNotBlank()) {
-                        val newTask = Task(taskIdCounter, inputTitle, inputDescription)
+                        val newTask = Task(generateTaskHash(), inputTitle, inputDescription)
                         myTasks.add(newTask)
-                        taskIdCounter++
                         saveTasks()
 
                         // Clean input boxes
