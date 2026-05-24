@@ -1,6 +1,7 @@
 package com.hipno06.traccoon
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,8 +38,9 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonPrimitive
 
-// import traccoon.shared.generated.resources.Res
-// import traccoon.shared.generated.resources.compose_multiplatform
+enum class Screen {
+    MAIN, ADD_TASK
+}
 
 @Composable
 @Preview
@@ -111,115 +113,179 @@ fun App() {
     var inputTitle by remember { mutableStateOf("") }
     var inputDescription by remember { mutableStateOf("") }
 
+    //? State to know which screen is shown
+    var currentScreen by remember { mutableStateOf(Screen.MAIN) }
     MaterialTheme {
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.background)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            //? Title
-            Text(text = "🦝 Traccoon 🦝", style = MaterialTheme.typography.titleLargeEmphasized)
-
-            //? Text Box: Title
-            TraccoonTextField(
-                value = inputTitle,
-                onValueChange = { inputTitle = it },
-                label = "Título de la tarea"
-            )
-            //? Text Box: Description
-            TraccoonTextField(
-                value = inputDescription,
-                onValueChange = { inputDescription = it },
-                label = "Descripción (opcional)"
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-            //? Button: save task
-            Button(
-                onClick = {
-                    // Only save if title isn't empty
-                    if (inputTitle.isNotBlank()) {
-                        val newTask = Task(generateTaskHash(), inputTitle, inputDescription)
-                        myTasks.add(newTask)
-                        saveTasks()
-
-                        // Clean input boxes
-                        inputTitle = ""
-                        inputDescription = ""
+        when (currentScreen) {
+            Screen.MAIN -> {
+                //! --- MAIN SCREEN ---
+                androidx.compose.material3.Scaffold(
+                    floatingActionButton = {
+                        androidx.compose.material3.FloatingActionButton(
+                            onClick = {currentScreen = Screen.ADD_TASK},
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ) {Text("+", style = MaterialTheme.typography.titleLarge)}
                     }
-                }
-                ////modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
-            ) {
-                Text("Añadir Tarea")
-            }
+                ) {
+                    paddingValues ->
+                    Column (
+                        modifier = Modifier
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(paddingValues)
+                        .safeContentPadding()
+                        .fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        //? Title
+                        Text(
+                            text = "🦝 Traccoon 🦝",
+                            style = MaterialTheme.typography.headlineLargeEmphasized,
+                            color = Color.Black,
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
 
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(text = "Tareas:", style = MaterialTheme.typography.titleMedium)
-            Column(modifier = Modifier.padding(top = 8.dp)) {
-                if (myTasks.isEmpty()) {
-                    Text(text = "No hay tareas pendientes")
-                } else {
-                    myTasks.forEachIndexed { index, task ->
-                        Card (
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp, horizontal = 8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically // Centres everything vertically
-                            ) {
-                                // Checkbox: completed task
-                                Checkbox(
-                                    checked = task.isCompleted,
-                                    onCheckedChange = { isChecked ->
-                                        myTasks[index] = task.copy(isCompleted = isChecked)
-                                        saveTasks()
-                                    }
-                                )
-
-                                // Tasks texts
-                                Column(modifier = Modifier.weight(1f).padding(start = 8.dp, end = 8.dp)) {
-                                    Text(
-                                        text = task.title,
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            // Cross out the task's title if it's marked as completed
-                                            textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                                        ),
-                                        // Recolor the task's title in gray if it's marked as completed
-                                        color = if (task.isCompleted) Color.Gray else Color.Unspecified,
-                                        // Text Overflow
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis // "..." shows when the text overflows
-                                    )
-                                    // Text(text = "ID: ${task.id}")
-                                    if (task.description.isNotBlank() && !task.isCompleted) {
-                                        Text(
-                                            text = task.description,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            // Text Overflow
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(text = "Tareas:", style = MaterialTheme.typography.titleMedium)
+                        Column(modifier = Modifier.padding(top = 8.dp)) {
+                            if (myTasks.isEmpty()) {
+                                Text(text = "No hay tareas pendientes")
+                            } else {
+                                myTasks.forEachIndexed { index, task ->
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp, horizontal = 8.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant
                                         )
-                                    }
-                                }
-
-                                // Delete task button
-                                Button(
-                                    onClick = {
-                                        myTasks.removeAt(index)
-                                        saveTasks()
-                                    }
                                     ) {
-                                    Text("Borrar")
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth()
+                                                .padding(vertical = 8.dp, horizontal = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically // Centres everything vertically
+                                        ) {
+                                            //? Checkbox: completed task
+                                            Checkbox(
+                                                checked = task.isCompleted,
+                                                onCheckedChange = { isChecked ->
+                                                    myTasks[index] = task.copy(isCompleted = isChecked)
+                                                    saveTasks()
+                                                }
+                                            )
+
+                                            //? Tasks texts
+                                            Column(
+                                                modifier = Modifier.weight(1f)
+                                                    .padding(start = 8.dp, end = 8.dp)
+                                            ) {
+                                                Text(
+                                                    text = task.title,
+                                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                                        // Cross out the task's title if it's marked as completed
+                                                        textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                                                    ),
+                                                    // Recolor the task's title in gray if it's marked as completed
+                                                    color = if (task.isCompleted) Color.Gray else Color.Unspecified,
+                                                    // Text Overflow
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis // "..." shows when the text overflows
+                                                )
+                                                // Text(text = "ID: ${task.id}")
+                                                if (task.description.isNotBlank() && !task.isCompleted) {
+                                                    Text(
+                                                        text = task.description,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        // Text Overflow
+                                                        maxLines = 2,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                            }
+
+                                            //? Delete task button
+                                            Button(
+                                                onClick = {
+                                                    myTasks.removeAt(index)
+                                                    saveTasks()
+                                                }
+                                            ) {
+                                                Text("Borrar")
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
+                    }
+                }
+            }
+            Screen.ADD_TASK -> {
+                //! --- TASK SCREEN ---
+                Column(
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.background)
+                        .safeContentPadding()
+                        .fillMaxSize()
+                        .padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = "Nueva Tarea",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    //? Text Box: Title
+                    TraccoonTextField(
+                        value = inputTitle,
+                        onValueChange = { inputTitle = it },
+                        label = "Título de la tarea"
+                    )
+                    //? Text Box: Description
+                    TraccoonTextField(
+                        value = inputDescription,
+                        onValueChange = { inputDescription = it },
+                        label = "Descripción (opcional)"
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                inputTitle = ""
+                                inputDescription = ""
+                                currentScreen = Screen.MAIN
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Cancelar")
+                        }
+                        //? Button: save task
+                        Button(
+                            onClick = {
+                                // Only save if title isn't empty
+                                if (inputTitle.isNotBlank()) {
+                                    val newTask =
+                                        Task(generateTaskHash(), inputTitle, inputDescription)
+                                    myTasks.add(newTask)
+                                    saveTasks()
+
+                                    // Clean input boxes
+                                    inputTitle = ""
+                                    inputDescription = ""
+                                    currentScreen = Screen.MAIN
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Añadir Tarea")
+                        }
+
                     }
                 }
             }
