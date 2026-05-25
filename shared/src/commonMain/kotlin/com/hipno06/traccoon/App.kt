@@ -237,7 +237,7 @@ fun App() {
                     Text(
                         text = "Nueva Tarea",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(top = 15.dp, bottom = 5.dp)
                     )
 
                     //? Text Box: Title
