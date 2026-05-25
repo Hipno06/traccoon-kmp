@@ -25,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -140,14 +142,25 @@ fun App() {
                     text = "🦝 Traccoon 🦝",
                     style = MaterialTheme.typography.headlineLarge,
                     color = Color.Black,
+                    fontFamily = FontFamily.Serif,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
-                Text(text = "Tareas:", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = "Tareas:",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontFamily = FontFamily.Serif,
+                    fontWeight = FontWeight.SemiBold
+                )
                 Column(modifier = Modifier.padding(top = 8.dp)) {
                     if (myTasks.isEmpty()) {
-                        Text(text = "No hay tareas pendientes")
+                        Text(
+                            text = "No hay tareas pendientes",
+                            fontFamily = FontFamily.Serif,
+                            fontWeight = FontWeight.W500
+                        )
                     } else {
                         myTasks.forEachIndexed { index, task ->
                             Card(
@@ -237,7 +250,9 @@ fun App() {
                     Text(
                         text = "Nueva Tarea",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 15.dp, bottom = 5.dp)
+                        modifier = Modifier.padding(top = 16.dp, bottom = 5.dp),
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.SemiBold
                     )
 
                     //? Text Box: Title
