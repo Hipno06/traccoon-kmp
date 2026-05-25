@@ -19,19 +19,13 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.hipno06.traccoon.data.TaskRepository.loadTasks
+import com.hipno06.traccoon.data.TaskRepository.saveTasks
 import com.hipno06.traccoon.model.Task
 import com.russhwolf.settings.Settings
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import com.hipno06.traccoon.model.generateTaskHash
 import com.hipno06.traccoon.ui.components.AddTaskSheet
 import com.hipno06.traccoon.ui.components.TaskCard
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.jsonPrimitive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,67 +35,19 @@ fun App() {
     val myTasks = remember { mutableStateListOf<Task>() }
 
     val isPreview = LocalInspectionMode.current
-    //? Save logic
-    // Multiplatform save tool
     val settings = remember { if (isPreview) null else Settings() }
-    //? Save function (we'll use it when pressing a button)
-    val saveTasks = {
-        if (!isPreview) {   // Only saves if it's real
-            // String -> JSON
-            val jsonString = Json.encodeToString(myTasks.toList())
-            settings?.putString("MIS_TAREAS", jsonString)
-        }
-    }
+
     //? Load tasks when the app opens
     LaunchedEffect(Unit) {
-        if (!isPreview) {   // Only loads if it's real
-            val savedJson = settings?.getString("MIS_TAREAS", "") ?: ""
-            if (savedJson.isNotEmpty()) {
-                // Json -> String
-                try {
-                    // Try to load tasks from JSON
-                    val loadTasks = Json.decodeFromString<List<Task>>(savedJson)
-                    myTasks.addAll(loadTasks)
-                } catch (_: Exception) {
-                    // Old JSON format detected
-                    try {
-                        // Read the raw file
-                        val jsonElement = Json.parseToJsonElement(savedJson)
-                        if (jsonElement is JsonArray) {
-                            // Build another JSON element by element
-                            val migratedArray = buildJsonArray {
-                                for (taskElement in jsonElement) {
-                                    if (taskElement is JsonObject) {
-                                        val mutableTask = taskElement.toMutableMap()
-                                        // Check the old ID
-                                        val oldId = mutableTask["id"]
-                                        // If the old ID isn't a String, change it and generate a new task hash
-                                        if (oldId?.jsonPrimitive?.isString == false) {
-                                            mutableTask["id"] = JsonPrimitive(generateTaskHash())
-                                        }
-                                        // Add the task to the list
-                                        add(JsonObject(mutableTask))
-                                    }
-                                }
-                            }
-                            // converts the new JSON into a task
-                            val loadTasks = Json.decodeFromJsonElement<List<Task>>(migratedArray)
-                            myTasks.addAll(loadTasks)
-
-                            // Overwrite the old file with new changes
-                            val correctedJsonString = Json.encodeToString(myTasks.toList())
-                            settings?.putString("MIS_TAREAS", correctedJsonString)
-                        }
-                    } catch (_: Exception) {
-                        //! If there's an error, delete the file
-                        settings?.remove("MIS_TAREAS")
-                    }
-                }
-            }
+        if (!isPreview) {   //? Only loads if it's real
+            myTasks.addAll(loadTasks(settings))
         }
     }
-
-
+    val saveTasks = {
+        if (!isPreview) {
+            saveTasks(settings, myTasks.toList())
+        }
+    }
 
     //? State to know if bottom task sheet is shown
     var showBottomSheet by remember { mutableStateOf(false) }
