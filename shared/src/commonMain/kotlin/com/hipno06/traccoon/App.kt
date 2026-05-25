@@ -1,21 +1,15 @@
 package com.hipno06.traccoon
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +24,7 @@ import com.russhwolf.settings.Settings
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import com.hipno06.traccoon.model.generateTaskHash
+import com.hipno06.traccoon.ui.components.AddTaskSheet
 import com.hipno06.traccoon.ui.components.TaskCard
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -37,7 +32,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonPrimitive
-import com.hipno06.traccoon.ui.components.TraccoonTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,14 +101,10 @@ fun App() {
         }
     }
 
-    //? States to save what user writes inside text boxes
-    var inputTitle by remember { mutableStateOf("") }
-    var inputDescription by remember { mutableStateOf("") }
+
 
     //? State to know if bottom task sheet is shown
     var showBottomSheet by remember { mutableStateOf(false) }
-    //? Sheet animation controller
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     MaterialTheme {
         //! --- MAIN SCREEN ---
         androidx.compose.material3.Scaffold(
@@ -177,83 +167,19 @@ fun App() {
             }
         }
         if (showBottomSheet) {
-            ModalBottomSheet(
-                onDismissRequest = {
+            AddTaskSheet(
+                onDismiss = {showBottomSheet = false},
+                onAddTask = {title, description ->
+                    val newTask = Task(
+                        id = generateTaskHash(),
+                        title = title,
+                        description = description
+                    )
+                    myTasks.add(newTask)
+                    saveTasks()
                     showBottomSheet = false
-                    inputTitle = ""
-                    inputDescription = ""
-                },
-                sheetState = sheetState
-            ) {
-                Column(
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.background)
-                        .safeContentPadding()
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = "Nueva Tarea",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 5.dp),
-                        fontFamily = FontFamily.Serif,
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    //? Text Box: Title
-                    TraccoonTextField(
-                        value = inputTitle,
-                        onValueChange = { inputTitle = it },
-                        label = "Título de la tarea"
-                    )
-                    //? Text Box: Description
-                    TraccoonTextField(
-                        value = inputDescription,
-                        onValueChange = { inputDescription = it },
-                        label = "Descripción (opcional)"
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                inputTitle = ""
-                                inputDescription = ""
-                                showBottomSheet = false
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Cancelar")
-                        }
-                        //? Button: save task
-                        Button(
-                            onClick = {
-                                // Only save if title isn't empty
-                                if (inputTitle.isNotBlank()) {
-                                    val newTask =
-                                        Task(generateTaskHash(), inputTitle, inputDescription)
-                                    myTasks.add(newTask)
-                                    saveTasks()
-
-                                    // Clean input boxes
-                                    inputTitle = ""
-                                    inputDescription = ""
-                                    showBottomSheet = false
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Añadir Tarea")
-                        }
-
-                    }
                 }
-            }
+            )
         }
     }
 }
