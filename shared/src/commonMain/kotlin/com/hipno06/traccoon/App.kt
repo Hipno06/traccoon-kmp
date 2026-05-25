@@ -14,9 +14,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,11 +40,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonPrimitive
-
-enum class Screen {
-    MAIN, ADD_TASK
-}
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Preview
 fun App() {
@@ -98,7 +97,7 @@ fun App() {
 
                             // Overwrite the old file with new changes
                             val correctedJsonString = Json.encodeToString(myTasks.toList())
-                            settings?.putString("MIS_TAREAS" ,correctedJsonString)
+                            settings?.putString("MIS_TAREAS", correctedJsonString)
                         }
                     } catch (_: Exception) {
                         //! If there's an error, delete the file
@@ -113,106 +112,103 @@ fun App() {
     var inputTitle by remember { mutableStateOf("") }
     var inputDescription by remember { mutableStateOf("") }
 
-    //? State to know which screen is shown
-    var currentScreen by remember { mutableStateOf(Screen.MAIN) }
+    //? State to know if bottom task sheet is shown
+    var showBottomSheet by remember { mutableStateOf(false) }
+    //? Sheet animation controller
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     MaterialTheme {
-        when (currentScreen) {
-            Screen.MAIN -> {
-                //! --- MAIN SCREEN ---
-                androidx.compose.material3.Scaffold(
-                    floatingActionButton = {
-                        androidx.compose.material3.FloatingActionButton(
-                            onClick = {currentScreen = Screen.ADD_TASK},
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        ) {Text("+", style = MaterialTheme.typography.titleLarge)}
-                    }
-                ) {
-                    paddingValues ->
-                    Column (
-                        modifier = Modifier
-                        .background(MaterialTheme.colorScheme.background)
-                        .padding(paddingValues)
-                        .safeContentPadding()
-                        .fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        //? Title
-                        Text(
-                            text = "🦝 Traccoon 🦝",
-                            style = MaterialTheme.typography.headlineLargeEmphasized,
-                            color = Color.Black,
-                            modifier = Modifier.padding(vertical = 16.dp)
-                        )
+        //! --- MAIN SCREEN ---
+        androidx.compose.material3.Scaffold(
+            floatingActionButton = {
+                androidx.compose.material3.FloatingActionButton(
+                    onClick = { showBottomSheet = true },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) { Text("+", style = MaterialTheme.typography.titleLarge) }
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(paddingValues)
+                    .safeContentPadding()
+                    .fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                //? Title
+                Text(
+                    text = "🦝 Traccoon 🦝",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = Color.Black,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
 
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(text = "Tareas:", style = MaterialTheme.typography.titleMedium)
-                        Column(modifier = Modifier.padding(top = 8.dp)) {
-                            if (myTasks.isEmpty()) {
-                                Text(text = "No hay tareas pendientes")
-                            } else {
-                                myTasks.forEachIndexed { index, task ->
-                                    Card(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp, horizontal = 8.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                        )
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth()
-                                                .padding(vertical = 8.dp, horizontal = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically // Centres everything vertically
-                                        ) {
-                                            //? Checkbox: completed task
-                                            Checkbox(
-                                                checked = task.isCompleted,
-                                                onCheckedChange = { isChecked ->
-                                                    myTasks[index] = task.copy(isCompleted = isChecked)
-                                                    saveTasks()
-                                                }
-                                            )
-
-                                            //? Tasks texts
-                                            Column(
-                                                modifier = Modifier.weight(1f)
-                                                    .padding(start = 8.dp, end = 8.dp)
-                                            ) {
-                                                Text(
-                                                    text = task.title,
-                                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                                        // Cross out the task's title if it's marked as completed
-                                                        textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                                                    ),
-                                                    // Recolor the task's title in gray if it's marked as completed
-                                                    color = if (task.isCompleted) Color.Gray else Color.Unspecified,
-                                                    // Text Overflow
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis // "..." shows when the text overflows
-                                                )
-                                                // Text(text = "ID: ${task.id}")
-                                                if (task.description.isNotBlank() && !task.isCompleted) {
-                                                    Text(
-                                                        text = task.description,
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        // Text Overflow
-                                                        maxLines = 2,
-                                                        overflow = TextOverflow.Ellipsis
-                                                    )
-                                                }
-                                            }
-
-                                            //? Delete task button
-                                            Button(
-                                                onClick = {
-                                                    myTasks.removeAt(index)
-                                                    saveTasks()
-                                                }
-                                            ) {
-                                                Text("Borrar")
-                                            }
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(text = "Tareas:", style = MaterialTheme.typography.titleMedium)
+                Column(modifier = Modifier.padding(top = 8.dp)) {
+                    if (myTasks.isEmpty()) {
+                        Text(text = "No hay tareas pendientes")
+                    } else {
+                        myTasks.forEachIndexed { index, task ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp, horizontal = 8.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically // Centres everything vertically
+                                ) {
+                                    //? Checkbox: completed task
+                                    Checkbox(
+                                        checked = task.isCompleted,
+                                        onCheckedChange = { isChecked ->
+                                            myTasks[index] = task.copy(isCompleted = isChecked)
+                                            saveTasks()
                                         }
+                                    )
+
+                                    //? Tasks texts
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                            .padding(start = 8.dp, end = 8.dp)
+                                    ) {
+                                        Text(
+                                            text = task.title,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                // Cross out the task's title if it's marked as completed
+                                                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                                            ),
+                                            // Recolor the task's title in gray if it's marked as completed
+                                            color = if (task.isCompleted) Color.Gray else Color.Unspecified,
+                                            // Text Overflow
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis // "..." shows when the text overflows
+                                        )
+                                        // Text(text = "ID: ${task.id}")
+                                        if (task.description.isNotBlank() && !task.isCompleted) {
+                                            Text(
+                                                text = task.description,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                // Text Overflow
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
+
+                                    //? Delete task button
+                                    Button(
+                                        onClick = {
+                                            myTasks.removeAt(index)
+                                            saveTasks()
+                                        }
+                                    ) {
+                                        Text("Borrar")
                                     }
                                 }
                             }
@@ -220,14 +216,22 @@ fun App() {
                     }
                 }
             }
-            Screen.ADD_TASK -> {
-                //! --- TASK SCREEN ---
+        }
+        if (showBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = {
+                    showBottomSheet = false
+                    inputTitle = ""
+                    inputDescription = ""
+                },
+                sheetState = sheetState
+            ) {
                 Column(
                     modifier = Modifier
                         .background(MaterialTheme.colorScheme.background)
                         .safeContentPadding()
-                        .fillMaxSize()
-                        .padding(vertical = 16.dp),
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
@@ -259,7 +263,7 @@ fun App() {
                             onClick = {
                                 inputTitle = ""
                                 inputDescription = ""
-                                currentScreen = Screen.MAIN
+                                showBottomSheet = false
                             },
                             modifier = Modifier.weight(1f)
                         ) {
@@ -278,7 +282,7 @@ fun App() {
                                     // Clean input boxes
                                     inputTitle = ""
                                     inputDescription = ""
-                                    currentScreen = Screen.MAIN
+                                    showBottomSheet = false
                                 }
                             },
                             modifier = Modifier.weight(1f)
